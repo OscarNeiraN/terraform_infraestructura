@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.0"
+      version = "~> 5.0"
     }
   }
 }
@@ -43,12 +43,25 @@ resource "aws_security_group" "vpc_default_sg" {
   
   egress {
     from_port   = 0
-    to_port     = 65535
+    to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
+##########################################################
+################ ELASTIC IP EIP ##########################
+##########################################################
+
+resource "aws_eip" "fruta_nat_eip"{
+    domain = "vpc"
+}
+resource "aws_eip" "fruta_nat_eip2" {
+  domain = "vpc"
+}
+resource "aws_eip" "fruta_nat_eip3" {
+  domain = "vpc"
+}
 ###########################################################
 ########## subnet us-east-1a ##############################
 ###########################################################
@@ -91,6 +104,11 @@ resource "aws_route_table_association" "rt_publ1" {
 
 resource "aws_route_table" "rt_priv1" {
     vpc_id = aws_vpc.vpc_fruta.id
+    route{
+        cidr_block = "0.0.0.0/0"
+        nat_gateway_id = aws_nat_gateway.fruta_nat_gw_fruta.id
+    }
+    depends_on = [aws_nat_gateway.fruta_nat_gw_fruta]
     tags = {
         Name = "rt_priv1"
     }
@@ -101,6 +119,15 @@ resource "aws_route_table_association" "rt_priv1" {
     route_table_id = aws_route_table.rt_priv1.id
 }
 
+# NAT GATEWAY
+
+resource "aws_nat_gateway" "fruta_nat_gw_fruta" {
+    allocation_id = aws_eip.fruta_nat_eip.id
+    subnet_id = aws_subnet.sub_publ1.id
+    tags = {
+        Name = "nat_gw_fruta"
+    }
+}
 
 ###############################################################
 ########## subnet us-east-1b ##################################
@@ -144,6 +171,11 @@ resource "aws_route_table_association" "rt_publ2" {
 
 resource "aws_route_table" "rt_priv2" {
     vpc_id = aws_vpc.vpc_fruta.id
+    route {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = aws_nat_gateway.fruta_nat_gw_fruta2.id
+    }
+    depends_on = [aws_nat_gateway.fruta_nat_gw_fruta2]
     tags = {
         Name = "rt_priv2"
     }
@@ -154,6 +186,15 @@ resource "aws_route_table_association" "rt_priv2" {
     route_table_id = aws_route_table.rt_priv2.id
 }
 
+# NAT GATEWAY
+
+resource "aws_nat_gateway" "fruta_nat_gw_fruta2" {
+    allocation_id = aws_eip.fruta_nat_eip2.id
+    subnet_id = aws_subnet.sub_publ2.id
+    tags = {
+        Name = "nat_gw_fruta2"
+    }
+}
 
 ##############################################################
 ########## subnet us-east-1c #################################
@@ -197,6 +238,11 @@ resource "aws_route_table_association" "rt_publ3" {
 
 resource "aws_route_table" "rt_priv3" {
     vpc_id = aws_vpc.vpc_fruta.id
+    route {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = aws_nat_gateway.fruta_nat_gw_fruta3.id
+    }
+    depends_on = [aws_nat_gateway.fruta_nat_gw_fruta3]
     tags = {
         Name = "rt_priv3"
     }
@@ -207,7 +253,15 @@ resource "aws_route_table_association" "rt_priv3" {
     route_table_id = aws_route_table.rt_priv3.id
 }
 
+# NAT GATEWAY
 
+resource "aws_nat_gateway" "fruta_nat_gw_fruta3" {
+    allocation_id = aws_eip.fruta_nat_eip3.id
+    subnet_id = aws_subnet.sub_publ3.id
+    tags = {
+        Name = "nat_gw_fruta3"
+    }
+}
 ################################################################
 ########## GRUPOS DE SEGURIDAD BALANCEADOR DE CARGA ############
 ################################################################
@@ -285,6 +339,19 @@ resource "aws_security_group_rule" "asociacion_balanceador_ec2_sg" {
 
 
 #############################################
+################ PAR DE LLAVE ###############
+#############################################
+
+resource "aws_key_pair" "ec2_key"{
+    key_name = "claves-key"
+    public_key = file("~/ec2_key.pub")
+}
+
+
+
+
+
+#############################################
 ########## INSTANCIAS EC2 ###################
 #############################################
 
@@ -294,7 +361,7 @@ resource "aws_instance" "ec2_publ_1" {
     instance_type = "t2.micro"
     subnet_id = aws_subnet.sub_publ1.id
     vpc_security_group_ids = [aws_security_group.seguridad-ec2-expuesta.id]
-    key_name = "key_fruta"
+    key_name = aws_key_pair.ec2_key.key_name
     tags = {
         Name = "ec2_publ_1"
     }
@@ -313,7 +380,7 @@ resource "aws_instance" "ec2_priv_2" {
     instance_type = "t2.micro"
     subnet_id = aws_subnet.sub_priv2.id
     vpc_security_group_ids = [aws_security_group.seguridad-ec2-expuesta.id]
-    key_name = "key_fruta"
+    key_name = aws_key_pair.ec2_key.key_name
     tags = {
         Name = "ec2_priv_2"
     }
