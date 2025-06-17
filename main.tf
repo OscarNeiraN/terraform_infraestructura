@@ -1,96 +1,86 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+        resource = "hashicorp/aws"
+        version = "~>5.0"
     }
   }
 }
 
-#################################################################
-########## CREACION DE VPC ######################################
-#################################################################
 
-resource "aws_vpc" "vpc_fruta" {
+resource "aws_vpc" "MoscoRetai" {
     cidr_block = "10.0.0.0/16"
     instance_tenancy = "default"
     enable_dns_support = true
     enable_dns_hostnames = true
     tags = {
-        Name = "vpc_fruta"
+      Name = "vpc_MoscoRetai"
     }
 }
 
-resource "aws_internet_gateway" "igw_fruta" {
-    vpc_id = aws_vpc.vpc_fruta.id
+resource "aws_internet_gateway" "igw_MoscoRetai" {
+    vpc_id = aws_vpc.MoscoRetai.id
     tags = {
-        Name = "igw_fruta"
+      Name = "igw_MoscoRetai"
+    }
+}
+resource "aws_security_group" "vpc_default_sg" {
+    name = "vpc_default_security_group"
+    vpc_id = aws_vpc.MoscoRetai.id
+    ingress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+
+    }
+
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
     }
 }
 
-resource "aws_security_group" "vpc_default_sg" {
-  name        = "vpc_default-security-group"
-  description = "Grupo de seguridad predeterminado de la VPC"
-  vpc_id      = aws_vpc.vpc_fruta.id
-
-  ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-##########################################################
-################ ELASTIC IP EIP ##########################
-##########################################################
-
-resource "aws_eip" "fruta_nat_eip"{
+resource "aws_eip" "MoscoRetai_nat_eip"{
     domain = "vpc"
 }
-resource "aws_eip" "fruta_nat_eip2" {
+resource "aws_eip" "MoscoRetai_nat_eip2" {
   domain = "vpc"
 }
-resource "aws_eip" "fruta_nat_eip3" {
+resource "aws_eip" "MoscoRetai_nat_eip3" {
   domain = "vpc"
 }
-###########################################################
-########## subnet us-east-1a ##############################
-###########################################################
+
+######################################################################
+######################################################################
 
 resource "aws_subnet" "sub_publ1" {
-    vpc_id = aws_vpc.vpc_fruta.id
-    cidr_block = "10.0.1.0/24"
+    vpc_id = aws_vpc.MoscoRetai.id
+    cidr_block = "10.0.0.0/20"
     map_public_ip_on_launch = true
     availability_zone = "us-east-1a"
     tags = {
-        Name = "subnet_fruta_publ"
+        Name = "subnet_MoscoRetail_publ"
     }
 }
 
 resource "aws_subnet" "sub_priv1" {
-    vpc_id = aws_vpc.vpc_fruta.id
-    cidr_block = "10.0.2.0/24"
+    vpc_id = aws_vpc.MoscoRetai.id
+    cidr_block = "10.0.48.0/20"
     map_public_ip_on_launch = false
     availability_zone = "us-east-1a"
     tags = {
-        Name = "subnet_fruta_priv"
+        Name = "subnet_MoscoRetail_priv"
     }
 }
 
 resource "aws_route_table" "rt_publ1" {
-    vpc_id = aws_vpc.vpc_fruta.id
+    vpc_id = aws_vpc.MoscoRetai.id
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.igw_fruta.id
+        gateway_id = aws_internet_gateway.igw_MoscoRetai.id
     }
     tags = {
         Name = "rt_publ1"
@@ -103,10 +93,10 @@ resource "aws_route_table_association" "rt_publ1" {
 }
 
 resource "aws_route_table" "rt_priv1" {
-    vpc_id = aws_vpc.vpc_fruta.id
+    vpc_id = aws_vpc.MoscoRetai.id
     route{
         cidr_block = "0.0.0.0/0"
-        nat_gateway_id = aws_nat_gateway.fruta_nat_gw_fruta.id
+        nat_gateway_id = aws_nat_gateway.MoscoRetai_nat_gw_MoscoRetai.id
     }
     depends_on = [aws_nat_gateway.fruta_nat_gw_fruta]
     tags = {
@@ -121,11 +111,11 @@ resource "aws_route_table_association" "rt_priv1" {
 
 # NAT GATEWAY
 
-resource "aws_nat_gateway" "fruta_nat_gw_fruta" {
-    allocation_id = aws_eip.fruta_nat_eip.id
+resource "aws_nat_gateway" "MoscoRetai_nat_gw_MoscoRetai" {
+    allocation_id = aws_eip.MoscoRetai_nat_eip.id
     subnet_id = aws_subnet.sub_publ1.id
     tags = {
-        Name = "nat_gw_fruta"
+        Name = "nat_gw_MoscoRetail"
     }
 }
 
@@ -134,30 +124,30 @@ resource "aws_nat_gateway" "fruta_nat_gw_fruta" {
 ###############################################################
 
 resource "aws_subnet" "sub_publ2" {
-    vpc_id = aws_vpc.vpc_fruta.id
-    cidr_block = "10.0.3.0/24"
+    vpc_id = aws_vpc.MoscoRetai.id
+    cidr_block = "10.0.16.0/20"
     map_public_ip_on_launch = true
     availability_zone = "us-east-1b"
     tags = {
-        Name = "subnet_fruta_publ2"
+        Name = "subnet_MoscoRetai_publ2"
     }
 }
 
 resource "aws_subnet" "sub_priv2" {
-    vpc_id = aws_vpc.vpc_fruta.id
-    cidr_block = "10.0.4.0/24"
+    vpc_id = aws_vpc.MoscoRetai.id
+    cidr_block = "10.0.64.0/20"
     map_public_ip_on_launch = false
     availability_zone = "us-east-1b"
     tags = {
-        Name = "subnet_fruta_priv2"
+        Name = "subnet_MoscoRetai_priv2"
     }
 }
 
 resource "aws_route_table" "rt_publ2" {
-    vpc_id = aws_vpc.vpc_fruta.id
+    vpc_id = aws_vpc.MoscoRetai.id
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.igw_fruta.id
+        gateway_id = aws_internet_gateway.igw_MoscoRetai.id
     }
     tags = {
         Name = "rt_publ2"
@@ -170,12 +160,12 @@ resource "aws_route_table_association" "rt_publ2" {
 }
 
 resource "aws_route_table" "rt_priv2" {
-    vpc_id = aws_vpc.vpc_fruta.id
+    vpc_id = aws_vpc.MoscoRetai.id
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = aws_nat_gateway.fruta_nat_gw_fruta2.id
+        gateway_id = aws_nat_gateway.MoscoRetai_nat_gw_MoscoRetai2.id
     }
-    depends_on = [aws_nat_gateway.fruta_nat_gw_fruta2]
+    depends_on = [aws_nat_gateway.MoscoRetai_nat_gw_MoscoRetai2]
     tags = {
         Name = "rt_priv2"
     }
@@ -188,11 +178,11 @@ resource "aws_route_table_association" "rt_priv2" {
 
 # NAT GATEWAY
 
-resource "aws_nat_gateway" "fruta_nat_gw_fruta2" {
-    allocation_id = aws_eip.fruta_nat_eip2.id
+resource "aws_nat_gateway" "MoscoRetai_nat_gw_MoscoRetai2" {
+    allocation_id = aws_eip.MoscoRetai_nat_eip2.id
     subnet_id = aws_subnet.sub_publ2.id
     tags = {
-        Name = "nat_gw_fruta2"
+        Name = "nat_gw_MoscoRetail2"
     }
 }
 
@@ -201,30 +191,30 @@ resource "aws_nat_gateway" "fruta_nat_gw_fruta2" {
 ##############################################################
 
 resource "aws_subnet" "sub_publ3" {
-    vpc_id = aws_vpc.vpc_fruta.id
-    cidr_block = "10.0.5.0/24"
+    vpc_id = aws_vpc.MoscoRetai.id
+    cidr_block = "10.0.32.0/20"
     map_public_ip_on_launch = true
     availability_zone = "us-east-1c"
     tags = {
-        Name = "subnet_fruta_publ3"
+        Name = "subnet_MoscoRetai_publ3"
     }
 }
 
 resource "aws_subnet" "sub_priv3" {
-    vpc_id = aws_vpc.vpc_fruta.id
-    cidr_block = "10.0.6.0/24"
+    vpc_id = aws_vpc.MoscoRetai.id
+    cidr_block = "10.0.80.0/20"
     map_public_ip_on_launch = false
     availability_zone = "us-east-1c"
     tags = {
-        Name = "subnet_fruta_priv3"
+        Name = "subnet_MoscoRetai_priv3"
     }
 }
 
 resource "aws_route_table" "rt_publ3" {
-    vpc_id = aws_vpc.vpc_fruta.id
+    vpc_id = aws_vpc.MoscoRetai.id
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.igw_fruta.id
+        gateway_id = aws_internet_gateway.igw_MoscoRetai.id
     }
     tags = {
         Name = "rt_publ3"
@@ -237,12 +227,12 @@ resource "aws_route_table_association" "rt_publ3" {
 }
 
 resource "aws_route_table" "rt_priv3" {
-    vpc_id = aws_vpc.vpc_fruta.id
+    vpc_id = aws_vpc.MoscoRetai.id
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = aws_nat_gateway.fruta_nat_gw_fruta3.id
+        gateway_id = aws_nat_gateway.MoscoRetai_nat_gw_MoscoRetai3.id
     }
-    depends_on = [aws_nat_gateway.fruta_nat_gw_fruta3]
+    depends_on = [aws_nat_gateway.MoscoRetai_nat_gw_MoscoRetai3]
     tags = {
         Name = "rt_priv3"
     }
@@ -255,141 +245,15 @@ resource "aws_route_table_association" "rt_priv3" {
 
 # NAT GATEWAY
 
-resource "aws_nat_gateway" "fruta_nat_gw_fruta3" {
-    allocation_id = aws_eip.fruta_nat_eip3.id
+resource "aws_nat_gateway" "MoscoRetai_nat_gw_MoscoRetai3" {
+    allocation_id = aws_eip.MoscoRetai_nat_eip3.id
     subnet_id = aws_subnet.sub_publ3.id
     tags = {
-        Name = "nat_gw_fruta3"
-    }
-}
-################################################################
-########## GRUPOS DE SEGURIDAD BALANCEADOR DE CARGA ############
-################################################################
-
-resource "aws_security_group" "seguridad_load_balancer" {
-    name = "seguridad-load-balacer"
-    description = "Seguridad para el load balacer"
-    vpc_id = aws_vpc.vpc_fruta.id
-    ingress {
-        from_port = 80
-        to_port = 80
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
+        Name = "nat_gw_MoscoRetail3"
     }
 }
 
 
-#######################################################
-########## GRUPOS DE SEGURIDAD EC2 BASTION HOST #######
-#######################################################
-resource "aws_security_group" "seguridad-ec2-bastion-host" {
-    name = "seguridad-ec2"
-    description = "Seguridad para la instancia EC2"
-    vpc_id = aws_vpc.vpc_fruta.id
-    ingress {
-        from_port = 22
-        to_port = 22
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-  
-}
-
-#######################################################
-########## GRUPOS DE SEGURIDAD EC2 WEB ################
-resource "aws_security_group" "seguridad-ec2-expuesta" {
-    name = "seguridad-ec2-expuesta"
-    description = "Seguridad para la instancia EC2 expuesta"
-    vpc_id = aws_vpc.vpc_fruta.id
-    ingress {
-        from_port = 22
-        to_port = 22
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-  
-}
-
-resource "aws_security_group_rule" "asociacion_balanceador_ec2_sg" {
-    type = "ingress"
-    security_group_id = aws_security_group.seguridad-ec2-expuesta.id
-    source_security_group_id = aws_security_group.seguridad_load_balancer.id
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
-}
-
-
-#############################################
-################ PAR DE LLAVE ###############
-#############################################
-
-resource "aws_key_pair" "ec2_key"{
-    key_name = "claves-key"
-    public_key = file("~/ec2_key.pub")
-}
 
 
 
-
-
-#############################################
-########## INSTANCIAS EC2 ###################
-#############################################
-
-
-resource "aws_instance" "ec2_publ_1" {
-    ami = "resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
-    instance_type = "t2.micro"
-    subnet_id = aws_subnet.sub_publ1.id
-    vpc_security_group_ids = [aws_security_group.seguridad-ec2-expuesta.id]
-    key_name = aws_key_pair.ec2_key.key_name
-    tags = {
-        Name = "ec2_publ_1"
-    }
-}
-output "mensaje_1" {
-  value = "ip de la instancia publica 1, subnet 10.0.1.0/24"
-}
-
-output "instancia_publ_1" {
-  value = [aws_instance.ec2_publ_1.public_ip , aws_instance.ec2_publ_1.private_ip ]
-}
-
-
-resource "aws_instance" "ec2_priv_2" {
-    ami = "resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
-    instance_type = "t2.micro"
-    subnet_id = aws_subnet.sub_priv2.id
-    vpc_security_group_ids = [aws_security_group.seguridad-ec2-expuesta.id]
-    key_name = aws_key_pair.ec2_key.key_name
-    tags = {
-        Name = "ec2_priv_2"
-    }
-}
-
-output "mensaje_2" {
-  value = "ip de la instancia privada 2, subnet 10.0.4.0/24"
-}
-
-output "instancia_priva_2" {
-    value = [aws_instance.ec2_priv_2.public_ip , aws_instance.ec2_priv_2.private_ip ]
-}
