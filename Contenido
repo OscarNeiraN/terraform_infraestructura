@@ -1,0 +1,6 @@
+Creación de VPC con terraform: 
+Contenido
+  -CIDR
+  -Subredes
+  -Nat Gateway
+  -Enrutamiento
